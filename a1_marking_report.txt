@@ -1,0 +1,108 @@
+Total before late penalty: [47/54]
+
+NOTE: in the marking report something left blank (e.g. [/6]) typically means
+that you got full marks for that item. 
+
+Bonus                                                           [3/3]
+
+CLIENT - FUNCTIONALITY:                                         [36/45]
+
+0. Working makefile produces the CSftp.jar file                 [2/2]
+  
+1. Command Argument processing                                  [/8]
+    - Commands terminated with carriage return + line feed  (4)
+    - Accepts server names in both IP and 
+       domain name format
+    - Processes port number and uses it
+    - Reports usage error if too many or too few arguments
+    - If control connection fails to open reports error 0xFFFC
+
+2. Features                                                     [2/2]
+     - reports error 002 if any arguments
+     - sends the FEAT command (assuming the control connection is open)
+     - prints the response(s) and reprompts when all of the
+       response has been printed
+
+3. User command                                                 [2/3]
+     - reports error 002 if too many or too few parameters
+     - Sends USER command to server
+     - Processes response 
+
+4. pw command                                                   [3/3]
+     - reports error 002 if too many or too few parameters
+     - Sends PASS command to server
+     - Processes response 
+
+5. quit command                                                 [1/2]
+     - Sends QUIT on the control connection.
+     - Exits, ideally closing connections first
+
+6. cd command                                                   [3/3]
+     - reports error 0x002 if too many or too few parameters
+     - sends CWD command 
+     - processes the response
+
+7. get command                                                  [4.5/9]
+    - command rejected with 0x002 error if improper number of arguments
+    - Sends PASV and opens connection specified in response
+    - System designed to enusre server is in binary mode
+    - Can handle error response or connection failure
+    - Sends RETR and can deal with 
+      - failure on remote side
+      	(should close the data connection)
+      - local file open failure
+      - unexpected closure of data channel
+    - actual transfer of file data
+    - binary files are properly transferred
+
+8. dir command                                                  [3/5]
+    - Sends PASV and opens connection specified in response
+    - Can handle error response or connection failure
+    - Sends LIST and can deal with  (2)
+      - failure on remote side
+      	(should close the data connection)
+      - unexpected closure of data channel
+    - actual transfer of directory listing is correct
+
+9. Format of output conforms to that specified in assignment    [3/4]
+   - in particular lines are identified with --> and <--
+   - Only data from the control connection prints the <--, printed
+     data on the data connection does not contain <-- 
+   - the contents of the data connection are only printed for the dir 
+     command, get and put do not print what is sent or 
+     received on the data connection. 
+
+10. Error processing                                            [2/2]
+   - handles unexpected closure of control connection
+   - handles unexpected EOF when reading command lines
+
+11. Parameters: properly handles multiple spaces or tabs        [2/2]
+
+---------------------
+Broad Marking Criteria :                                        [8/9] 
+
+     Readability                                                [3/3]
+     Code Documentation                                         [3/3]
+     Code Quality                                               [2/3]
+   
+
+MARKER'S ADDITIONAL COMMENTS:
+Ok so you made one huge mistake which caused a lot of tests to blow up. I don't think you tested on the Python FTP server 
+Your implementation does seem to work on UBC FTP though however our testing environment is Linux with the Python server
+Your bug is that in this block of code:
+                            } else if (fromUser.startsWith("user ")) {
+                                System.out.println("--> " + userInput[0].toUpperCase() + " " + userInput[1]);
+                                out.print(fromUser.toUpperCase() + "\r\n");
+                                out.flush();
+You send "fromUser.toUpperCase()\r\n" to the server... which logs you in as ANONYMOUS instead of anonymous
+The server is case sensitive and it assumes ANONYMOUS has an actual password because it's not "anonymous"
+I think you can see where this is going
+
+3. I'm docking 1 marks from USER just because what you did was wrong and it made most of the remaining tests fail
+5. You don't output the fact that you send "QUIT" to the server and you don't close your sockets
+7. I think you have issues with actually transferring the files over. I was unable to download a random .txt file
+The reason is because you expect a 150 but the Python server gives you a 125.
+8. Similarly you have issues printing the directory listing because you expect a 150. Please don't add a <-- to the directory listing output because
+it comes from the data connection
+9. Don't output anything you weren't asked to output (eg. you output the host and port at the beginning). Please don't add a <-- to the directory listing output because
+it comes from the data connection
